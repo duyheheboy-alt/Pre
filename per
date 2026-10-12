@@ -1,0 +1,88 @@
+[General]
+bypass-system = true
+skip-proxy = 127.0.0.1, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 100.64.0.0/10, localhost, *.local, e.crashlytics.com
+tun-excluded-routes = 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16
+dns-server = system
+fallback-dns-server = system
+ipv6 = false
+prefer-ipv6 = false
+dns-fallback-system = false
+udp-policy-not-supported-behaviour = REJECT
+allow-wifi-access = true
+wifi-access-http-port = 8080
+wifi-access-socks5-port = 8081
+http-listen = 0.0.0.0
+socks5-listen = 0.0.0.0
+proxy-test-url = http://www.gstatic.com/generate_204
+test-timeout = 5
+
+[Proxy]
+# thêm proxy vùng HK/TW/TH của anh ở đây
+# ví dụ:
+# HK = trojan, hk.example.com, 443, password=xxx, over-tls=true, tls-verification=true
+# TW = vmess, tw.example.com, 443, username=uuid, ws=true, ws-path=/path
+# DIRECT = direct
+
+[Proxy Group]
+# nếu có proxy vùng thì bật group này, không thì xóa
+# Region = select, HK, TW, DIRECT
+
+[Rule]
+# --- bilibili API/CDN ---
+# nếu có proxy vùng: đổi DIRECT → Region ở các dòng playurl
+DOMAIN-SUFFIX,bilibili.com,DIRECT
+DOMAIN-SUFFIX,biliapi.net,DIRECT
+DOMAIN-SUFFIX,biliapi.com,DIRECT
+DOMAIN-SUFFIX,bilivideo.com,DIRECT
+DOMAIN-SUFFIX,bilivideo.cn,DIRECT
+DOMAIN-SUFFIX,hdslb.com,DIRECT
+DOMAIN-SUFFIX,bilicdn.com,DIRECT
+DOMAIN-SUFFIX,acgvideo.com,DIRECT
+DOMAIN-SUFFIX,akamaized.net,DIRECT
+DOMAIN-SUFFIX,upos-sz-mirrorcos.bilivideo.com,DIRECT
+DOMAIN-SUFFIX,mcdn.bilivideo.cn,DIRECT
+DOMAIN-SUFFIX,pcdn.bilivideo.cn,DIRECT
+
+# chặn quảng cáo / tracking
+DOMAIN-SUFFIX,cm.bilibili.com,REJECT
+DOMAIN-SUFFIX,ad.bilibili.com,REJECT
+DOMAIN-SUFFIX,data.bilibili.com,REJECT
+DOMAIN-SUFFIX,track.bilibili.com,REJECT
+
+# LAN
+IP-CIDR,192.168.0.0/16,DIRECT
+IP-CIDR,10.0.0.0/8,DIRECT
+IP-CIDR,172.16.0.0/12,DIRECT
+IP-CIDR,127.0.0.0/8,DIRECT
+GEOIP,CN,DIRECT
+
+FINAL,DIRECT
+
+[URL Rewrite]
+# chặn splash quảng cáo
+^https?:\/\/app\.bilibili\.com\/x\/v2\/splash\/list - reject
+^https?:\/\/app\.bilibili\.com\/x\/v2\/splash\/show - reject
+^https?:\/\/app\.bilibili\.com\/x\/v2\/splash\/event\/list - reject
+^https?:\/\/app\.bilibili\.com\/x\/v2\/splash\/brand\/list - reject
+
+[Script]
+# ---- feed: chèn area + lọc ad ----
+http-request  ^https?:\/\/app\.bilibili\.com\/x\/v2\/feed\/index          script-path=bilibili.js, requires-body=false, timeout=30
+http-response ^https?:\/\/app\.bilibili\.com\/x\/v2\/feed\/index          script-path=bilibili.js, requires-body=true,  timeout=30
+
+# ---- account: patch vip UI ----
+http-response ^https?:\/\/app\.bilibili\.com\/x\/v2\/account             script-path=bilibili.js, requires-body=true,  timeout=30
+http-response ^https?:\/\/api\.bilibili\.com\/x\/web-interface\/nav       script-path=bilibili.js, requires-body=true,  timeout=30
+
+# ---- playurl: ép area + qn cho unlock vùng ----
+http-request  ^https?:\/\/api\.bilibili\.com\/pgc\/player\/web\/playurl   script-path=bilibili.js, requires-body=false, timeout=30
+http-request  ^https?:\/\/api\.bilibili\.com\/x\/player\/playurl          script-path=bilibili.js, requires-body=false, timeout=30
+http-request  ^https?:\/\/api\.bilibili\.com\/pgc\/player\/playurl        script-path=bilibili.js, requires-body=false, timeout=30
+
+# ---- pgc season: chèn area ----
+http-request  ^https?:\/\/api\.bilibili\.com\/pgc\/view\/pgc\/season     script-path=bilibili.js, requires-body=false, timeout=30
+
+[MITM]
+hostname = %APPEND% app.bilibili.com, api.bilibili.com, api.live.bilibili.com, api.vc.bilibili.com, grpc.biliapi.net, passport.bilibili.com, www.bilibili.com
+ca-passphrase = BiliUniverse
+ca-p12 = MIIKGwIBAzCCB.....
